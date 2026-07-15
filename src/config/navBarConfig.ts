@@ -38,8 +38,8 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		],
 	});
 
-	// 友链
-	links.push(LinkPresets.Friends);
+	// 动态
+	links.push(LinkPresets.Dynamic);
 
 	// 留言板
 	// links.push(LinkPresets.Guestbook);
@@ -129,6 +129,12 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		url: "/",
 		icon: "material-symbols:home",
 	},
+	Dynamic: {
+		name: "动态",
+		url: "/dynamic/",
+		icon: "material-symbols:forum-rounded",
+		pageKey: "dynamic",
+	},
 	Archive: {
 		name: "归档",
 		url: "/archive/",
@@ -147,7 +153,7 @@ export const LinkPresets: Record<string, NavBarLink> = {
 	Friends: {
 		name: "友链",
 		url: "/friends/",
-		icon: "material-symbols:group",
+		icon: "material-symbols:link-2-rounded",
 		pageKey: "friends",
 	},
 	Sponsor: {

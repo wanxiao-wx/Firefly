@@ -32,7 +32,7 @@ export type SiteConfig = {
 	description?: string; // 网站描述，用于生成 <meta name="description">
 	keywords?: string[]; // 站点关键词，用于生成 <meta name="keywords">
 
-	lang: "en" | "zh_CN" | "zh_TW" | "ja" | "ru";
+	lang: "en" | "zh_CN" | "zh_TW" | "ja" | "ru" | "ko";
 
 	themeColor: {
 		hue: number;
@@ -87,6 +87,7 @@ export type SiteConfig = {
 		anime: boolean; // 追番页面开关
 		projects: boolean; // 项目页面开关
 		timeline: boolean; // 时间线页面开关
+		dynamic: boolean; // 动态页面开关
 	};
 
 	// 分类导航栏开关
