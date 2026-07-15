@@ -1,0 +1,135 @@
+---
+import { Icon } from "astro-icon/components";
+import { siteConfig } from "@/config";
+import { timelineData } from "@/data/timeline";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+
+if (!siteConfig.pages.timeline) {
+	return Astro.redirect("/404/");
+}
+
+const title = "时间线";
+const description = "把一些经历按时间放在一起。";
+const types = [...new Set(timelineData.map((item) => item.type))];
+const typeLabel: Record<string, string> = {
+	education: "学习",
+	work: "工作",
+	project: "项目",
+	achievement: "成就",
+};
+
+const formatRange = (start: string, end?: string) => {
+	const short = (value: string) => value.slice(0, 7);
+	return end ? `${short(start)} - ${short(end)}` : `${short(start)} - 至今`;
+};
+---
+
+<MainGridLayout title={title} description={description}>
+	<div class="flex w-full rounded-(--radius-large) overflow-hidden relative min-h-32">
+		<div class="card-base z-10 px-6 sm:px-9 py-6 relative w-full">
+			<div class="page-heading">
+				<div class="page-icon"><Icon is:inline name="material-symbols:timeline" /></div>
+				<div>
+					<h1>{title}</h1>
+					<p>{description}</p>
+				</div>
+			</div>
+
+			<timeline-filter class="filter-row">
+				<button type="button" data-type="all" data-active>全部</button>
+				{types.map((type) => <button type="button" data-type={type}>{typeLabel[type] || type}</button>)}
+			</timeline-filter>
+
+			<div class="timeline-list">
+				{
+					timelineData.map((item) => (
+						<article class="timeline-card" data-type={item.type}>
+							<div class="timeline-marker" style={`--item-color: ${item.color || "var(--primary)"}`}>
+								<Icon is:inline name={item.icon || "material-symbols:event"} />
+							</div>
+							<div class="timeline-content">
+								<div class="timeline-meta">
+									<span>{typeLabel[item.type] || item.type}</span>
+									<time>{formatRange(item.startDate, item.endDate)}</time>
+								</div>
+								<h2>{item.title}</h2>
+								<p>{item.description}</p>
+								{(item.organization || item.location || item.position) && (
+									<div class="timeline-submeta">
+										{item.organization && <span>{item.organization}</span>}
+										{item.position && <span>{item.position}</span>}
+										{item.location && <span>{item.location}</span>}
+									</div>
+								)}
+								{item.skills && item.skills.length > 0 && (
+									<div class="pill-list">
+										{item.skills.map((skill) => <span>{skill}</span>)}
+									</div>
+								)}
+								{item.achievements && item.achievements.length > 0 && (
+									<ul>
+										{item.achievements.map((achievement) => <li>{achievement}</li>)}
+									</ul>
+								)}
+								{item.links && item.links.length > 0 && (
+									<div class="timeline-links">
+										{item.links.map((link) => (
+											<a href={link.url} target="_blank" rel="noopener noreferrer">
+												<Icon is:inline name="material-symbols:open-in-new" />
+												{link.name}
+											</a>
+										))}
+									</div>
+								)}
+							</div>
+						</article>
+					))
+				}
+			</div>
+		</div>
+	</div>
+
+	<script is:inline>
+		if (!customElements.get("timeline-filter")) {
+			customElements.define("timeline-filter", class extends HTMLElement {
+				connectedCallback() {
+					this.addEventListener("click", (event) => {
+						const button = event.target.closest("button");
+						if (!button) return;
+						this.querySelectorAll("button").forEach((item) => item.removeAttribute("data-active"));
+						button.setAttribute("data-active", "");
+						const type = button.dataset.type || "all";
+						const cards = this.closest(".card-base").querySelectorAll(".timeline-card");
+						cards.forEach((card) => {
+							card.hidden = type !== "all" && card.dataset.type !== type;
+						});
+					});
+				}
+			});
+		}
+	</script>
+</MainGridLayout>
+
+<style>
+	.page-heading { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; }
+	.page-icon { width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; display: grid; place-items: center; background: var(--primary); color: white; font-size: 1.6rem; }
+	.page-heading h1 { margin: 0; font-size: 1.9rem; font-weight: 800; color: var(--text-90); }
+	.page-heading p { margin: 0.25rem 0 0; color: var(--text-50); }
+	.filter-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
+	.filter-row button { border: 1px solid var(--line-divider); border-radius: 999px; padding: 0.45rem 0.9rem; background: var(--btn-regular-bg); color: var(--btn-content); cursor: pointer; }
+	.filter-row button[data-active] { background: var(--primary); border-color: var(--primary); color: white; }
+	.timeline-list { position: relative; display: grid; gap: 1rem; }
+	.timeline-list::before { content: ""; position: absolute; left: 1.15rem; top: 0; bottom: 0; width: 2px; background: var(--line-divider); }
+	.timeline-card { display: grid; grid-template-columns: 2.4rem minmax(0, 1fr); gap: 0.9rem; position: relative; }
+	.timeline-marker { width: 2.4rem; height: 2.4rem; border-radius: 999px; display: grid; place-items: center; background: var(--item-color); color: white; z-index: 1; margin-top: 0.4rem; }
+	.timeline-content { border: 1px solid var(--line-divider); border-radius: var(--radius-large); padding: 1rem; background: color-mix(in srgb, var(--card-bg) 90%, transparent); }
+	.timeline-meta, .timeline-submeta, .timeline-links { display: flex; flex-wrap: wrap; gap: 0.75rem; color: var(--text-50); font-size: 0.82rem; }
+	.timeline-meta span { color: var(--primary); font-weight: 700; }
+	.timeline-content h2 { margin: 0.45rem 0; color: var(--text-90); font-size: 1.2rem; }
+	.timeline-content p { margin: 0; color: var(--text-70); line-height: 1.7; }
+	.pill-list { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.85rem; }
+	.pill-list span { border-radius: 999px; padding: 0.18rem 0.55rem; background: var(--btn-regular-bg); color: var(--text-50); font-size: 0.72rem; }
+	.timeline-content ul { margin: 0.85rem 0 0; padding-left: 1.1rem; color: var(--text-70); }
+	.timeline-links { margin-top: 0.85rem; }
+	.timeline-links a { display: inline-flex; align-items: center; gap: 0.25rem; color: var(--primary); font-weight: 700; }
+</style>

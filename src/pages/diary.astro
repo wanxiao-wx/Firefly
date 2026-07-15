@@ -1,0 +1,280 @@
+---
+import { Icon } from "astro-icon/components";
+import { getAllTags, getDiaryList } from "@/data/diary";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+
+const title = "日记";
+const description = "一些零散的日常片段。";
+const moments = getDiaryList();
+const allTags = getAllTags();
+
+const formatDate = (dateString: string) =>
+	new Intl.DateTimeFormat("zh-CN", {
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+	}).format(new Date(dateString));
+---
+
+<MainGridLayout title={title} description={description}>
+	<div class="flex w-full rounded-(--radius-large) overflow-hidden relative min-h-32">
+		<div class="card-base z-10 px-6 sm:px-9 py-6 relative w-full">
+			<div class="page-heading">
+				<div class="page-icon">
+					<Icon is:inline name="material-symbols:edit-note" />
+				</div>
+				<div>
+					<h1>{title}</h1>
+					<p>{description}</p>
+				</div>
+				<div class="page-count">
+					<strong>{moments.length}</strong>
+					<span>条</span>
+				</div>
+			</div>
+
+			{
+				allTags.length > 0 && (
+					<diary-filter class="filter-row">
+						<button type="button" data-tag="all" data-active>全部</button>
+						{allTags.map((tag) => (
+							<button type="button" data-tag={tag}>{tag}</button>
+						))}
+					</diary-filter>
+				)
+			}
+
+			<div class="diary-list">
+				{
+					moments.map((moment) => (
+						<article class="diary-card" data-tags={moment.tags?.join(",") || ""}>
+							<div class="diary-dot" />
+							<div class="diary-body">
+								<div class="diary-meta">
+									<time datetime={moment.date}>{formatDate(moment.date)}</time>
+									{moment.location && <span>{moment.location}</span>}
+									{moment.mood && <span>{moment.mood}</span>}
+								</div>
+								<p>{moment.content}</p>
+								{moment.images && moment.images.length > 0 && (
+									<div class:list={["diary-images", moment.images.length === 1 && "single"]}>
+										{moment.images.map((image) => (
+											<a href={image} data-fancybox="diary">
+												<img src={image} alt="日记图片" loading="lazy" decoding="async" />
+											</a>
+										))}
+									</div>
+								)}
+								{moment.tags && moment.tags.length > 0 && (
+									<div class="tag-list">
+										{moment.tags.map((tag) => <span>{tag}</span>)}
+									</div>
+								)}
+							</div>
+						</article>
+					))
+				}
+			</div>
+
+			<div class="empty-state" hidden>
+				<Icon is:inline name="material-symbols:search-off-rounded" />
+				<span>没有匹配的日记</span>
+			</div>
+		</div>
+	</div>
+
+	<script is:inline>
+		if (!customElements.get("diary-filter")) {
+			customElements.define(
+				"diary-filter",
+				class extends HTMLElement {
+					connectedCallback() {
+						this.addEventListener("click", (event) => {
+							const button = event.target.closest("button");
+							if (!button) return;
+							this.querySelectorAll("button").forEach((item) => item.removeAttribute("data-active"));
+							button.setAttribute("data-active", "");
+							const tag = button.dataset.tag || "all";
+							const root = this.closest(".card-base");
+							const cards = root.querySelectorAll(".diary-card");
+							let visible = 0;
+							cards.forEach((card) => {
+								const tags = (card.dataset.tags || "").split(",");
+								const show = tag === "all" || tags.includes(tag);
+								card.hidden = !show;
+								if (show) visible += 1;
+							});
+							const empty = root.querySelector(".empty-state");
+							if (empty) empty.hidden = visible > 0;
+						});
+					}
+				},
+			);
+		}
+	</script>
+</MainGridLayout>
+
+<style>
+	.page-heading {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		gap: 1rem;
+		align-items: center;
+		margin-bottom: 1.5rem;
+	}
+
+	.page-icon {
+		width: 2.5rem;
+		height: 2.5rem;
+		border-radius: 0.75rem;
+		display: grid;
+		place-items: center;
+		background: var(--primary);
+		color: white;
+		font-size: 1.6rem;
+	}
+
+	.page-heading h1 {
+		margin: 0;
+		font-size: 1.9rem;
+		font-weight: 800;
+		color: var(--text-90);
+	}
+
+	.page-heading p,
+	.page-count span,
+	.diary-meta {
+		color: var(--text-50);
+	}
+
+	.page-count {
+		text-align: right;
+	}
+
+	.page-count strong {
+		display: block;
+		font-size: 1.6rem;
+		color: var(--primary);
+	}
+
+	.filter-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.filter-row button,
+	.tag-list span {
+		border: 1px solid var(--line-divider);
+		border-radius: 999px;
+		background: var(--btn-regular-bg);
+		color: var(--btn-content);
+	}
+
+	.filter-row button {
+		padding: 0.45rem 0.9rem;
+		cursor: pointer;
+	}
+
+	.filter-row button[data-active] {
+		background: var(--primary);
+		border-color: var(--primary);
+		color: white;
+	}
+
+	.diary-list {
+		position: relative;
+		display: grid;
+		gap: 1rem;
+	}
+
+	.diary-card {
+		display: grid;
+		grid-template-columns: 1rem minmax(0, 1fr);
+		gap: 0.85rem;
+	}
+
+	.diary-dot {
+		width: 0.7rem;
+		height: 0.7rem;
+		border-radius: 999px;
+		margin-top: 1.1rem;
+		background: var(--primary);
+		box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 20%, transparent);
+	}
+
+	.diary-body {
+		border: 1px solid var(--line-divider);
+		border-radius: var(--radius-large);
+		padding: 1rem;
+		background: color-mix(in srgb, var(--card-bg) 90%, transparent);
+	}
+
+	.diary-meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		font-size: 0.82rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.diary-body p {
+		margin: 0;
+		color: var(--text-90);
+		line-height: 1.8;
+		white-space: pre-wrap;
+	}
+
+	.diary-images {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+		gap: 0.5rem;
+		margin-top: 0.9rem;
+	}
+
+	.diary-images.single {
+		grid-template-columns: minmax(0, 20rem);
+	}
+
+	.diary-images a {
+		display: block;
+		aspect-ratio: 1;
+		overflow: hidden;
+		border-radius: 0.75rem;
+		background: var(--btn-regular-bg);
+	}
+
+	.diary-images img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.tag-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+		margin-top: 0.85rem;
+	}
+
+	.tag-list span {
+		padding: 0.18rem 0.55rem;
+		font-size: 0.72rem;
+		color: var(--text-50);
+	}
+
+	.empty-state {
+		text-align: center;
+		padding: 3rem 0;
+		color: var(--text-50);
+	}
+
+	.empty-state svg {
+		font-size: 3rem;
+		display: block;
+		margin: 0 auto 0.75rem;
+	}
+</style>

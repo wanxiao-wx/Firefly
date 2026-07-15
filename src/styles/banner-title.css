@@ -1,20 +1,94 @@
 /* 横幅文字阴影 - 更柔和的扩散效果 */
 .banner-title {
-    text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
-    /* 防止大字体标题溢出容器 */
-    overflow-wrap: break-word;
-    word-break: break-word;
-    /* 响应式字体大小：取用户配置值与视口宽度10%中的较小值，防止小屏幕溢出 */
-    font-size: var(--banner-title-size, 3rem);
-    font-size: min(var(--banner-title-size, 3rem), 10vw);
-    /* 独立字体设置，通过 fontConfig.bannerTitleFont 配置 */
-    font-family: var(--font-banner-title, inherit);
+    position: relative;
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 0.1em 0.3em 0.16em;
+    font-family: var(--font-banner-title, var(--font-sans), inherit);
+    font-size: var(--banner-title-size, 6rem);
+    font-weight: 950;
+    line-height: 1.04;
+    letter-spacing: 0;
+    color: #ffffff;
+    text-align: center;
+    overflow-wrap: anywhere;
+    word-break: keep-all;
+    background: none;
+    filter: none;
+	animation: none !important;
+	transition: opacity 650ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.banner-title.banner-title--hatch-reveal {
+	opacity: 0 !important;
 }
 
 .banner-subtitle {
     text-shadow: 0 2px 16px rgba(0, 0, 0, 0.6);
     /* 独立字体设置，通过 fontConfig.bannerSubtitleFont 配置 */
     font-family: var(--font-banner-subtitle, inherit);
+}
+
+.banner-home-text-overlay .banner-subtitle {
+    display: inline-flex;
+    width: fit-content;
+    max-width: min(42rem, 100%);
+    min-height: 2.15rem;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    padding: 0.46rem 1.15rem;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.72);
+    color: #050505;
+    font-weight: 900;
+    letter-spacing: 0;
+    line-height: 1.25;
+    box-shadow:
+        0 3px 0 rgba(0, 0, 0, 0.65),
+        0 10px 24px rgba(0, 0, 0, 0.35);
+    text-shadow: none;
+}
+
+@media (max-width: 1024px) {
+    .banner-title {
+        font-size: 4.8rem;
+    }
+}
+
+@media (max-width: 640px) {
+	.banner-title {
+		font-size: 3rem;
+    }
+
+    .banner-home-text-overlay .banner-subtitle {
+        padding: 0.4rem 0.8rem;
+		font-size: 0.95rem !important;
+	}
+}
+
+#wallpaper-wrapper .banner-home-text-overlay .banner-title {
+	font-size: var(--banner-title-size, 6rem) !important;
+	text-shadow: none !important;
+}
+
+#wallpaper-wrapper .banner-home-text-overlay .banner-subtitle {
+	font-size: 1rem !important;
+	text-shadow: none !important;
+}
+
+@media (max-width: 1024px) {
+	#wallpaper-wrapper .banner-home-text-overlay .banner-title {
+		font-size: 4.8rem !important;
+	}
+}
+
+@media (max-width: 640px) {
+	#wallpaper-wrapper .banner-home-text-overlay .banner-title {
+		font-size: 3rem !important;
+	}
 }
 
 /* 横幅背景暗层透明度 - 通过配置文件 common.dimOpacity 控制，内联样式覆盖 */
