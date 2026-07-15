@@ -1,0 +1,140 @@
+---
+import { Icon } from "astro-icon/components";
+import {
+	getShuffledWebNavigationList,
+	webNavigationData,
+} from "@/data/web-navigation";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+
+export const prerender = true;
+
+const title = "网页导航";
+const description = "常用网站和资源入口。";
+const items = getShuffledWebNavigationList
+	? getShuffledWebNavigationList()
+	: webNavigationData;
+const allTags = [...new Set(items.flatMap((item) => item.tags || []))];
+---
+
+<MainGridLayout title={title} description={description}>
+	<div class="flex w-full rounded-(--radius-large) overflow-hidden relative min-h-32">
+		<div class="card-base z-10 px-6 sm:px-9 py-6 relative w-full">
+			<div class="page-heading">
+				<div class="page-icon"><Icon is:inline name="material-symbols:travel-explore" /></div>
+				<div>
+					<h1>{title}</h1>
+					<p>{description}</p>
+				</div>
+			</div>
+
+			<navigation-filter class="nav-filter">
+				<label class="search-box">
+					<Icon is:inline name="material-symbols:search" />
+					<input type="search" data-search placeholder="搜索网站名称或描述..." />
+				</label>
+				<div class="filter-row">
+					<button type="button" data-tag="all" data-active>全部</button>
+					{allTags.map((tag) => <button type="button" data-tag={tag}>{tag}</button>)}
+				</div>
+			</navigation-filter>
+
+			<div class="nav-grid">
+				{
+					items.map((item) => (
+						<a
+							class="nav-card"
+							href={item.siteurl}
+							target="_blank"
+							rel="noopener noreferrer"
+							data-tags={item.tags?.join(",") || ""}
+							data-title={item.title}
+							data-desc={item.desc}
+						>
+							<div class="nav-avatar">
+								<img src={item.imgurl} alt={item.title} loading="lazy" decoding="async" />
+							</div>
+							<div class="nav-content">
+								<div class="nav-title">
+									<strong>{item.title}</strong>
+									<Icon is:inline name="material-symbols:arrow-outward-rounded" />
+								</div>
+								<p>{item.desc}</p>
+								<div class="tag-list">
+									{item.tags?.slice(0, 3).map((tag) => <span>{tag}</span>)}
+								</div>
+							</div>
+						</a>
+					))
+				}
+			</div>
+
+			<div class="empty-state" hidden>
+				<Icon is:inline name="material-symbols:search-off-rounded" />
+				<span>未找到匹配的网站</span>
+			</div>
+		</div>
+	</div>
+
+	<script is:inline>
+		if (!customElements.get("navigation-filter")) {
+			customElements.define("navigation-filter", class extends HTMLElement {
+				selectedTag = "all";
+				connectedCallback() {
+					this.addEventListener("click", (event) => {
+						const button = event.target.closest("button");
+						if (!button) return;
+						this.querySelectorAll("button").forEach((item) => item.removeAttribute("data-active"));
+						button.setAttribute("data-active", "");
+						this.selectedTag = button.dataset.tag || "all";
+						this.applyFilters();
+					});
+					const input = this.querySelector("[data-search]");
+					input?.addEventListener("input", () => this.applyFilters());
+				}
+				applyFilters() {
+					const root = this.closest(".card-base");
+					const query = (this.querySelector("[data-search]")?.value || "").toLowerCase().trim();
+					const cards = root.querySelectorAll(".nav-card");
+					let visible = 0;
+					cards.forEach((card) => {
+						const tags = (card.dataset.tags || "").split(",");
+						const haystack = `${card.dataset.title || ""} ${card.dataset.desc || ""} ${card.dataset.tags || ""}`.toLowerCase();
+						const tagMatch = this.selectedTag === "all" || tags.includes(this.selectedTag);
+						const queryMatch = !query || haystack.includes(query);
+						const show = tagMatch && queryMatch;
+						card.hidden = !show;
+						if (show) visible += 1;
+					});
+					const empty = root.querySelector(".empty-state");
+					if (empty) empty.hidden = visible > 0;
+				}
+			});
+		}
+	</script>
+</MainGridLayout>
+
+<style>
+	.page-heading { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; }
+	.page-icon { width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; display: grid; place-items: center; background: var(--primary); color: white; font-size: 1.6rem; }
+	.page-heading h1 { margin: 0; font-size: 1.9rem; font-weight: 800; color: var(--text-90); }
+	.page-heading p { margin: 0.25rem 0 0; color: var(--text-50); }
+	.nav-filter { display: block; margin-bottom: 1.5rem; }
+	.search-box { display: flex; align-items: center; gap: 0.6rem; border: 1px solid var(--line-divider); border-radius: var(--radius-large); padding: 0.65rem 0.85rem; color: var(--text-50); background: color-mix(in srgb, var(--card-bg) 90%, transparent); }
+	.search-box input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--text-90); }
+	.filter-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+	.filter-row button { border: 1px solid var(--line-divider); border-radius: 999px; padding: 0.42rem 0.85rem; background: var(--btn-regular-bg); color: var(--btn-content); cursor: pointer; }
+	.filter-row button[data-active] { background: var(--primary); border-color: var(--primary); color: white; }
+	.nav-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: 1rem; }
+	.nav-card { display: flex; gap: 0.85rem; align-items: center; border: 1px solid var(--line-divider); border-radius: var(--radius-large); padding: 0.85rem; background: color-mix(in srgb, var(--card-bg) 90%, transparent); transition: transform 0.2s ease, border-color 0.2s ease; }
+	.nav-card:hover { transform: translateY(-2px); border-color: var(--primary); }
+	.nav-avatar { width: 3.5rem; height: 3.5rem; border-radius: 0.9rem; overflow: hidden; background: var(--btn-regular-bg); flex: none; }
+	.nav-avatar img { width: 100%; height: 100%; object-fit: cover; }
+	.nav-content { min-width: 0; flex: 1; }
+	.nav-title { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; color: var(--text-90); }
+	.nav-title svg { color: var(--primary); opacity: 0.75; flex: none; }
+	.nav-card p { margin: 0.3rem 0 0; color: var(--text-50); font-size: 0.88rem; line-height: 1.5; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+	.tag-list { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.55rem; }
+	.tag-list span { border-radius: 999px; padding: 0.16rem 0.5rem; background: var(--btn-regular-bg); color: var(--text-50); font-size: 0.68rem; }
+	.empty-state { text-align: center; padding: 3rem 0; color: var(--text-50); }
+	.empty-state svg { display: block; margin: 0 auto 0.75rem; font-size: 3rem; }
+</style>

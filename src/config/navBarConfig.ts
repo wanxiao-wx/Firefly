@@ -19,7 +19,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 	// 文章及其子菜单
 	links.push({
 		name: "文章",
-		url: "#",
+		url: "/archive/",
 		icon: "material-symbols:article",
 		children: [
 			// 归档
@@ -30,6 +30,11 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 
 			// 标签
 			LinkPresets.Tags,
+			{
+				name: "动心合集",
+				url: "/dongxin-videos/",
+				icon: "material-symbols:video-library",
+			},
 		],
 	});
 
@@ -37,7 +42,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 	links.push(LinkPresets.Friends);
 
 	// 留言板
-	links.push(LinkPresets.Guestbook);
+	// links.push(LinkPresets.Guestbook);
 
 	// 我的及其子菜单
 	links.push({
@@ -45,14 +50,13 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		url: "#",
 		icon: "material-symbols:person",
 		children: [
-			// 相册
-			LinkPresets.Gallery,
-
-			// 追番
 			LinkPresets.Anime,
-
-			// 番组计划
-			LinkPresets.Bangumi,
+			LinkPresets.Gallery,
+			{
+				name: "日记",
+				url: "/diary/",
+				icon: "material-symbols:book",
+			},
 		],
 	});
 
@@ -62,9 +66,6 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		url: "#",
 		icon: "material-symbols:info",
 		children: [
-			// 打赏
-			LinkPresets.Sponsor,
-
 			// 关于页面
 			LinkPresets.About,
 		],
@@ -75,31 +76,29 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		name: "链接",
 		url: "#",
 		icon: "material-symbols:link",
-		// 子菜单
 		children: [
 			{
 				name: "GitHub",
-				url: "https://github.com/CuteLeaf/Firefly",
+				url: "https://github.com/wanxiao-wx",
 				external: true,
 				icon: "fa7-brands:github",
 			},
 			{
-				name: "Gitee",
-				url: "https://gitee.com/CuteLeaf/Firefly",
+				name: "Bilibili",
+				url: "https://space.bilibili.com/2620220?spm_id_from=333.1007.0.0",
 				external: true,
-				icon: "fa7-brands:gitee",
+				icon: "fa7-brands:bilibili",
 			},
 			{
-				name: "QQ交流群",
-				url: "https://qm.qq.com/q/ZGsFa8qX2G",
+				name: "Dstatus",
+				url: "https://ds.wanxiao.ovh/",
 				external: true,
-				icon: "fa7-brands:qq",
+				icon: "material-symbols:monitoring",
 			},
 			{
-				name: "Firefly文档",
-				url: "https://docs-firefly.cuteleaf.cn",
-				external: true,
-				icon: "material-symbols:docs",
+				name: "网页导航",
+				url: "/web-navigation/",
+				icon: "material-symbols:travel-explore",
 			},
 		],
 	});

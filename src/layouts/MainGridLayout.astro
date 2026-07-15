@@ -622,9 +622,9 @@ const hasMultipleImages =
             <div class="w-4/5 lg:w-3/4 text-center mb-0">
                 <div class="flex flex-col">
                     {backgroundWallpaper.common?.homeText?.title && (
-                        <div class="banner-title font-bold text-white mb-2 lg:mb-4 leading-tight" style={{ '--banner-title-size': backgroundWallpaper.common.homeText.titleSize || "3rem" }}>
-                            {backgroundWallpaper.common.homeText.title}
-                        </div>
+	                        <div class="banner-title font-bold text-white mb-2 lg:mb-4 leading-tight" data-hatch-title style={{ '--banner-title-size': backgroundWallpaper.common.homeText.titleSize || "3rem" }}>
+	                            {backgroundWallpaper.common.homeText.title}
+	                        </div>
                     )}
                     {backgroundWallpaper.common?.homeText?.subtitle && (
                         <div id="banner-subtitle" class="banner-subtitle text-white/90 leading-snug" style={{ fontSize: backgroundWallpaper.common.homeText.subtitleSize || "1.5rem" }} data-subtitles={JSON.stringify(backgroundWallpaper.common.homeText.subtitle)}>
@@ -643,11 +643,203 @@ const hasMultipleImages =
                 </div>
             </div>
         </div>
-    )}
+	    )}
 
-    <script is:inline>
-        function setRandomSubtitle() {
-            const subtitleElement = document.getElementById('banner-subtitle');
+	    <script>
+	        import { VFX } from "@vfx-js/core";
+	        import { HatchEffect } from "@/utils/hatch-effect";
+
+		        type BannerTitleHatchState = {
+		            vfx: VFX;
+		            effect: HatchEffect;
+		            element: HTMLElement;
+		            canvas: HTMLCanvasElement | null;
+		            originalOpacity: string;
+		            revealTimer: number | null;
+		            disposed: boolean;
+		        };
+
+		        let bannerTitleHatchState: BannerTitleHatchState | null = null;
+		        let bannerTitleInitToken = 0;
+
+	        function prefersReducedMotion() {
+	            return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+	        }
+
+	        function isMobile() {
+	            return window.matchMedia("(max-width: 768px)").matches;
+	        }
+
+	        async function waitForBannerTitleLayout(
+	            title: HTMLElement,
+	            token: number,
+	        ): Promise<DOMRect | null> {
+	            for (let frame = 0; frame < 120; frame += 1) {
+	                if (
+	                    token !== bannerTitleInitToken ||
+	                    !document.contains(title)
+	                ) return null;
+
+	                const rect = title.getBoundingClientRect();
+	                if (
+	                    rect.width > 0 &&
+	                    rect.height > 0 &&
+	                    rect.width <= window.innerWidth
+	                ) return rect;
+
+	                await new Promise((resolve) => requestAnimationFrame(resolve));
+	            }
+	            return null;
+	        }
+
+		        function disposeBannerTitleHatchState(state: BannerTitleHatchState) {
+		            if (state.disposed) return;
+		            state.disposed = true;
+		            if (state.revealTimer !== null) {
+		                window.clearTimeout(state.revealTimer);
+		                state.revealTimer = null;
+		            }
+
+		            try {
+		                state.vfx.remove(state.element);
+		            } catch {
+		                // The target may not have finished registering yet.
+		            }
+		            state.effect.dispose();
+		            try {
+		                state.vfx.destroy();
+		            } catch {
+		                // The WebGL context may already be gone during navigation.
+		            }
+		            state.element.style.opacity = state.originalOpacity;
+		            state.element.classList.remove(
+		                "banner-title--hatch-ready",
+		                "banner-title--hatch-reveal",
+		            );
+		        }
+
+		        function destroyBannerTitleHatch() {
+		            bannerTitleInitToken += 1;
+		            const state = bannerTitleHatchState;
+		            bannerTitleHatchState = null;
+		            if (state) {
+		                try {
+		                    disposeBannerTitleHatchState(state);
+		                } catch {
+		                    state.element.style.opacity = state.originalOpacity;
+		                    state.element.classList.remove(
+		                        "banner-title--hatch-ready",
+		                        "banner-title--hatch-reveal",
+		                    );
+		                }
+		            }
+		        }
+
+		        async function initBannerTitleHatch() {
+		            destroyBannerTitleHatch();
+
+		            const token = bannerTitleInitToken;
+		            const title = document.querySelector<HTMLElement>(".banner-home-text-overlay:not(.hidden) [data-hatch-title]");
+		            if (!title || prefersReducedMotion() || isMobile()) return;
+
+	            try {
+	                await document.fonts?.ready;
+	            } catch {
+	                // Font readiness is a visual enhancement, not a hard dependency.
+	            }
+
+		            const titleRect = await waitForBannerTitleLayout(title, token);
+		            if (!titleRect) return;
+
+		            const originalOpacity = title.style.opacity;
+		            await new Promise((resolve) => requestAnimationFrame(resolve));
+		            if (token !== bannerTitleInitToken || !document.contains(title)) {
+		                return;
+		            }
+
+		            const existingCanvases = new Set(
+		                document.querySelectorAll<HTMLCanvasElement>("body > canvas"),
+		            );
+		            const vfx = VFX.init({ pixelRatio: Math.min(window.devicePixelRatio, 1.5) });
+		            if (!vfx) return;
+		            const vfxCanvas = Array.from(
+		                document.querySelectorAll<HTMLCanvasElement>("body > canvas"),
+		            ).find((canvas) => !existingCanvases.has(canvas)) ?? null;
+		            if (vfxCanvas) {
+		                vfxCanvas.style.opacity = "0";
+		                vfxCanvas.style.transition =
+		                    "opacity 650ms cubic-bezier(0.22, 1, 0.36, 1)";
+		            }
+
+	            const effect = new HatchEffect({
+	                color: "#ffffff",
+	                angle: 45,
+	                spacing: 2.5,
+	                lineWidth: 2,
+	                angleJitter: 0.5,
+	                offsetJitter: 2,
+	                spacingJitter: 0.5,
+	                seed: 0,
+	                speed: 8,
+	                roundCap: true,
+	                soft: 0,
+	                originalColor: false,
+	                bypass: false,
+	            });
+
+		            const state: BannerTitleHatchState = {
+		                vfx,
+		                effect,
+		                element: title,
+		                canvas: vfxCanvas,
+		                originalOpacity,
+		                revealTimer: null,
+		                disposed: false,
+		            };
+		            bannerTitleHatchState = state;
+
+		            try {
+		                await vfx.add(title, {
+		                    effect,
+		                    autoCrop: false,
+		                    overlay: true,
+		                });
+		                if (
+		                    token !== bannerTitleInitToken ||
+		                    bannerTitleHatchState !== state ||
+		                    !document.contains(title)
+		                ) {
+		                    disposeBannerTitleHatchState(state);
+		                    return;
+		                }
+		                title.classList.add("banner-title--hatch-ready");
+		                state.revealTimer = window.setTimeout(() => {
+		                    if (
+		                        token !== bannerTitleInitToken ||
+		                        bannerTitleHatchState !== state ||
+		                        !document.contains(title)
+		                    ) return;
+		                    if (state.canvas) state.canvas.style.opacity = "1";
+		                    title.classList.add("banner-title--hatch-reveal");
+		                    state.revealTimer = null;
+		                }, 1000);
+		            } catch {
+		                if (bannerTitleHatchState === state) {
+		                    bannerTitleHatchState = null;
+		                }
+		                disposeBannerTitleHatchState(state);
+		            }
+		        }
+
+	        initBannerTitleHatch();
+	        document.addEventListener("astro:page-load", initBannerTitleHatch);
+	        document.addEventListener("astro:before-swap", destroyBannerTitleHatch);
+	        window.addEventListener("beforeunload", destroyBannerTitleHatch);
+	    </script>
+
+	    <script is:inline>
+	        function setRandomSubtitle() {
+	            const subtitleElement = document.getElementById('banner-subtitle');
             if (!subtitleElement) return;
 
             const subtitlesData = subtitleElement.dataset.subtitles;
@@ -933,4 +1125,3 @@ const hasMultipleImages =
   }
 
 </style>
-

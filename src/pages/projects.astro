@@ -1,0 +1,131 @@
+---
+import { Icon } from "astro-icon/components";
+import { siteConfig } from "@/config";
+import { projectsData } from "@/data/projects";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+
+if (!siteConfig.pages.projects) {
+	return Astro.redirect("/404/");
+}
+
+const title = "项目";
+const description = "做过、正在做，以及想继续完善的项目。";
+const categories = [
+	...new Set(projectsData.map((project) => project.category)),
+];
+const categoryLabel: Record<string, string> = {
+	web: "网页",
+	mobile: "移动端",
+	desktop: "桌面端",
+	other: "其他",
+};
+const statusLabel: Record<string, string> = {
+	completed: "已完成",
+	"in-progress": "进行中",
+	planned: "计划中",
+};
+---
+
+<MainGridLayout title={title} description={description}>
+	<div class="flex w-full rounded-(--radius-large) overflow-hidden relative min-h-32">
+		<div class="card-base z-10 px-6 sm:px-9 py-6 relative w-full">
+			<div class="page-heading">
+				<div class="page-icon"><Icon is:inline name="material-symbols:deployed-code" /></div>
+				<div>
+					<h1>{title}</h1>
+					<p>{description}</p>
+				</div>
+			</div>
+
+			<project-filter class="filter-row">
+				<button type="button" data-category="all" data-active>全部</button>
+				{categories.map((category) => <button type="button" data-category={category}>{categoryLabel[category] || category}</button>)}
+			</project-filter>
+
+			<div class="project-grid">
+				{
+					projectsData.map((project) => (
+						<article class="project-card" data-category={project.category}>
+							{project.showImage !== false && project.image && (
+								<img src={project.image} alt={project.title} loading="lazy" decoding="async" />
+							)}
+							<div class="project-content">
+								<div class="project-topline">
+									<span>{categoryLabel[project.category] || project.category}</span>
+									<span>{statusLabel[project.status] || project.status}</span>
+								</div>
+								<h2>{project.title}</h2>
+								<p>{project.description}</p>
+								<div class="tech-list">
+									{project.techStack.slice(0, 6).map((tech) => <span>{tech}</span>)}
+								</div>
+								<div class="project-actions">
+									{project.visitUrl && (
+										<a href={project.visitUrl} target="_blank" rel="noopener noreferrer">
+											<Icon is:inline name="material-symbols:open-in-new" />
+											访问
+										</a>
+									)}
+									{project.liveDemo && (
+										<a href={project.liveDemo} target="_blank" rel="noopener noreferrer">
+											<Icon is:inline name="material-symbols:play-circle" />
+											演示
+										</a>
+									)}
+									{project.sourceCode && (
+										<a href={project.sourceCode} target="_blank" rel="noopener noreferrer">
+											<Icon is:inline name="fa7-brands:github" />
+											源码
+										</a>
+									)}
+								</div>
+							</div>
+						</article>
+					))
+				}
+			</div>
+		</div>
+	</div>
+
+	<script is:inline>
+		if (!customElements.get("project-filter")) {
+			customElements.define("project-filter", class extends HTMLElement {
+				connectedCallback() {
+					this.addEventListener("click", (event) => {
+						const button = event.target.closest("button");
+						if (!button) return;
+						this.querySelectorAll("button").forEach((item) => item.removeAttribute("data-active"));
+						button.setAttribute("data-active", "");
+						const category = button.dataset.category || "all";
+						const cards = this.closest(".card-base").querySelectorAll(".project-card");
+						cards.forEach((card) => {
+							card.hidden = category !== "all" && card.dataset.category !== category;
+						});
+					});
+				}
+			});
+		}
+	</script>
+</MainGridLayout>
+
+<style>
+	.page-heading { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; }
+	.page-icon { width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; display: grid; place-items: center; background: var(--primary); color: white; font-size: 1.6rem; }
+	.page-heading h1 { margin: 0; font-size: 1.9rem; font-weight: 800; color: var(--text-90); }
+	.page-heading p { margin: 0.25rem 0 0; color: var(--text-50); }
+	.filter-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
+	.filter-row button { border: 1px solid var(--line-divider); border-radius: 999px; padding: 0.45rem 0.9rem; background: var(--btn-regular-bg); color: var(--btn-content); cursor: pointer; }
+	.filter-row button[data-active] { background: var(--primary); border-color: var(--primary); color: white; }
+	.project-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: 1rem; }
+	.project-card { border: 1px solid var(--line-divider); border-radius: var(--radius-large); overflow: hidden; background: color-mix(in srgb, var(--card-bg) 90%, transparent); transition: transform 0.2s ease, border-color 0.2s ease; }
+	.project-card:hover { transform: translateY(-2px); border-color: var(--primary); }
+	.project-card > img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--btn-regular-bg); }
+	.project-content { padding: 1rem; }
+	.project-topline { display: flex; justify-content: space-between; gap: 0.75rem; color: var(--primary); font-size: 0.78rem; font-weight: 700; }
+	.project-card h2 { margin: 0.55rem 0; font-size: 1.25rem; color: var(--text-90); }
+	.project-card p { margin: 0; color: var(--text-70); line-height: 1.7; }
+	.tech-list { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.9rem; }
+	.tech-list span { border-radius: 999px; padding: 0.2rem 0.55rem; background: var(--btn-regular-bg); color: var(--text-50); font-size: 0.72rem; }
+	.project-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+	.project-actions a { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--primary); font-size: 0.85rem; font-weight: 700; }
+</style>

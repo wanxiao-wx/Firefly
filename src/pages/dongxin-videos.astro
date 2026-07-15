@@ -1,0 +1,278 @@
+---
+import { Icon } from "astro-icon/components";
+import { dongxinSourceTitle, dongxinVideos } from "@/data/dongxin-videos";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+
+const title = "动心 MTV/PV 合集";
+const description = dongxinSourceTitle;
+const formatEpisode = (episode: number) => episode.toString().padStart(3, "0");
+const formatDuration = (seconds: number) => {
+	const minutes = Math.floor(seconds / 60);
+	const rest = seconds % 60;
+	return `${minutes}:${rest.toString().padStart(2, "0")}`;
+};
+
+const mainVideos = dongxinVideos.filter((video) => video.episode !== null);
+const extraVideos = dongxinVideos.filter((video) => video.episode === null);
+const projectNames = [
+	...new Set(extraVideos.map((video) => video.project || "其他")),
+];
+const episodeGroups = Array.from({ length: 140 }, (_, index) => {
+	const episode = index + 1;
+	return {
+		episode,
+		videos: mainVideos.filter((video) => video.episode === episode),
+	};
+});
+const extraGroups = projectNames.map((project) => ({
+	project,
+	videos: extraVideos.filter((video) => (video.project || "其他") === project),
+}));
+const initialVideo = dongxinVideos[0];
+---
+
+<MainGridLayout title={title} description={description}>
+	<div class="flex w-full rounded-(--radius-large) overflow-hidden relative min-h-32">
+		<div class="card-base z-10 px-5 sm:px-8 py-6 relative w-full">
+			<div class="page-heading">
+				<div class="page-icon"><Icon is:inline name="material-symbols:video-library" /></div>
+				<div>
+					<h1>{title}</h1>
+					<p>{description}</p>
+				</div>
+			</div>
+
+			<section class="player-shell" aria-label="Bilibili 播放器">
+				<div class="player-frame">
+					<iframe
+						id="dongxin-player"
+						src={initialVideo.embedUrl}
+						title={initialVideo.title}
+						allow="fullscreen; picture-in-picture"
+						allowfullscreen
+						referrerpolicy="no-referrer-when-downgrade"
+					>
+					</iframe>
+				</div>
+				<div class="now-playing">
+					<div>
+						<p id="dongxin-current-page">P{initialVideo.page}</p>
+						<h2 id="dongxin-current-title">{initialVideo.title}</h2>
+					</div>
+					<a id="dongxin-current-source" href={initialVideo.sourceUrl} target="_blank" rel="noopener noreferrer">
+						<Icon is:inline name="material-symbols:open-in-new" />
+						原站
+					</a>
+				</div>
+			</section>
+
+			<section class="summary-grid" aria-label="合集统计">
+				<div><strong>{dongxinVideos.length}</strong><span>视频</span></div>
+				<div><strong>{mainVideos.length}</strong><span>001-140</span></div>
+				<div><strong>{extraVideos.length}</strong><span>增刊/SP</span></div>
+				<div><strong>{extraGroups.length}</strong><span>项目</span></div>
+			</section>
+
+			<dongxin-filter class="toolbar">
+				<div class="view-tabs">
+					<button type="button" data-view="all" data-active><Icon is:inline name="material-symbols:apps" />全部</button>
+					<button type="button" data-view="periodical"><Icon is:inline name="material-symbols:format-list-numbered" />001-140</button>
+					<button type="button" data-view="extras"><Icon is:inline name="material-symbols:folder-special" />项目</button>
+				</div>
+				<label class="search-box">
+					<Icon is:inline name="material-symbols:search" />
+					<input type="search" data-search placeholder="搜索标题、期号、项目" />
+				</label>
+			</dongxin-filter>
+
+			<section class="video-section" data-section-view="periodical">
+				<div class="section-heading">
+					<h2>001-140 期</h2>
+					<span>{mainVideos.length} 个视频</span>
+				</div>
+				<div class="directory">
+					{
+						episodeGroups.map((group) => (
+							<details class="video-group" data-group data-group-view="periodical" data-empty={group.videos.length === 0 ? "true" : "false"}>
+								<summary>
+									<span>{formatEpisode(group.episode)} 期</span>
+									<small>{group.videos.length} 个视频</small>
+								</summary>
+								{group.videos.length > 0 ? (
+									<div class="video-list">
+										{group.videos.map((video) => (
+											<button
+												type="button"
+												class="video-row"
+												data-video-item
+												data-view="periodical"
+												data-title={video.title}
+												data-episode={formatEpisode(video.episode || 0)}
+												data-project=""
+												data-embed={video.embedUrl}
+												data-source={video.sourceUrl}
+												data-page={`P${video.page}`}
+											>
+												<span class="row-page">P{video.page}</span>
+												<span class="row-title">{video.title}</span>
+												<span class="row-duration">{formatDuration(video.duration)}</span>
+											</button>
+										))}
+									</div>
+								) : (
+									<p class="video-empty">源选集未提供可识别标题</p>
+								)}
+							</details>
+						))
+					}
+				</div>
+			</section>
+
+			<section class="video-section" data-section-view="extras">
+				<div class="section-heading">
+					<h2>非 001-140 项目</h2>
+					<span>{extraVideos.length} 个视频</span>
+				</div>
+				<div class="directory">
+					{
+						extraGroups.map((group) => (
+							<details class="video-group" data-group data-group-view="extras">
+								<summary>
+									<span>{group.project}</span>
+									<small>{group.videos.length} 个视频</small>
+								</summary>
+								<div class="video-list">
+									{group.videos.map((video) => (
+										<button
+											type="button"
+											class="video-row"
+											data-video-item
+											data-view="extras"
+											data-title={video.title}
+											data-episode=""
+											data-project={group.project}
+											data-embed={video.embedUrl}
+											data-source={video.sourceUrl}
+											data-page={`P${video.page}`}
+										>
+											<span class="row-page">P{video.page}</span>
+											<span class="row-title">{video.title}</span>
+											<span class="row-duration">{formatDuration(video.duration)}</span>
+										</button>
+									))}
+								</div>
+							</details>
+						))
+					}
+				</div>
+			</section>
+		</div>
+	</div>
+
+	<script is:inline>
+		if (!customElements.get("dongxin-filter")) {
+			customElements.define("dongxin-filter", class extends HTMLElement {
+				activeView = "all";
+				connectedCallback() {
+					this.addEventListener("click", (event) => {
+						const viewButton = event.target.closest("[data-view]");
+						if (!viewButton) return;
+						this.querySelectorAll("[data-view]").forEach((button) => button.removeAttribute("data-active"));
+						viewButton.setAttribute("data-active", "");
+						this.activeView = viewButton.dataset.view || "all";
+						this.applyFilters();
+					});
+					this.querySelector("[data-search]")?.addEventListener("input", () => this.applyFilters());
+				}
+				applyFilters() {
+					const root = this.closest(".card-base");
+					const query = (this.querySelector("[data-search]")?.value || "").toLowerCase().trim();
+					root.querySelectorAll("[data-section-view]").forEach((section) => {
+						const sectionView = section.dataset.sectionView || "";
+						section.hidden = this.activeView !== "all" && this.activeView !== sectionView;
+					});
+					root.querySelectorAll("[data-video-item]").forEach((row) => {
+						const haystack = `${row.dataset.title || ""} ${row.dataset.episode || ""} ${row.dataset.project || ""}`.toLowerCase();
+						const viewMatch = this.activeView === "all" || row.dataset.view === this.activeView;
+						const queryMatch = !query || haystack.includes(query);
+						row.hidden = !viewMatch || !queryMatch;
+					});
+					root.querySelectorAll("[data-group]").forEach((group) => {
+						const groupView = group.dataset.groupView || "";
+						const viewMatch = this.activeView === "all" || groupView === this.activeView;
+						const visibleRows = Array.from(group.querySelectorAll("[data-video-item]")).some((row) => !row.hidden);
+						const isEmpty = group.dataset.empty === "true";
+						group.hidden = !viewMatch || (!visibleRows && !isEmpty);
+						if (query && visibleRows) group.open = true;
+					});
+				}
+			});
+		}
+
+		document.addEventListener("click", (event) => {
+			const row = event.target.closest("[data-video-item]");
+			if (!row) return;
+			const player = document.getElementById("dongxin-player");
+			const title = document.getElementById("dongxin-current-title");
+			const page = document.getElementById("dongxin-current-page");
+			const source = document.getElementById("dongxin-current-source");
+			if (!player || !title || !page || !source) return;
+			player.src = row.dataset.embed || "";
+			player.title = row.dataset.title || "";
+			title.textContent = row.dataset.title || "";
+			page.textContent = row.dataset.page || "";
+			source.href = row.dataset.source || "#";
+			document.querySelectorAll(".video-row.active").forEach((item) => item.classList.remove("active"));
+			row.classList.add("active");
+		});
+	</script>
+</MainGridLayout>
+
+<style>
+	.page-heading { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; }
+	.page-icon { width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; display: grid; place-items: center; background: var(--primary); color: white; font-size: 1.6rem; flex: none; }
+	.page-heading h1 { margin: 0; font-size: 1.9rem; font-weight: 800; color: var(--text-90); }
+	.page-heading p { margin: 0.25rem 0 0; color: var(--text-50); line-height: 1.5; }
+	.player-shell { border: 1px solid var(--line-divider); border-radius: var(--radius-large); overflow: hidden; background: var(--card-bg); }
+	.player-frame { aspect-ratio: 16 / 9; background: #050505; }
+	.player-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
+	.now-playing { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border-top: 1px solid var(--line-divider); }
+	.now-playing p { margin: 0 0 0.2rem; color: var(--primary); font-weight: 800; font-size: 0.8rem; }
+	.now-playing h2 { margin: 0; color: var(--text-90); font-size: 1rem; line-height: 1.5; }
+	.now-playing a { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--primary); white-space: nowrap; font-weight: 700; }
+	.summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; margin: 1rem 0; }
+	.summary-grid div { border: 1px solid var(--line-divider); border-radius: var(--radius-large); padding: 0.85rem; background: var(--btn-regular-bg); }
+	.summary-grid strong { display: block; color: var(--text-90); font-size: 1.35rem; }
+	.summary-grid span { color: var(--text-50); font-size: 0.82rem; }
+	.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 1.25rem 0; }
+	.view-tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+	.view-tabs button { display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid var(--line-divider); border-radius: var(--radius-large); padding: 0.55rem 0.85rem; background: var(--btn-regular-bg); color: var(--btn-content); cursor: pointer; }
+	.view-tabs button[data-active] { background: var(--primary); border-color: var(--primary); color: white; }
+	.search-box { display: flex; align-items: center; gap: 0.5rem; min-width: min(100%, 18rem); border: 1px solid var(--line-divider); border-radius: var(--radius-large); padding: 0.55rem 0.75rem; background: var(--card-bg); color: var(--text-50); }
+	.search-box input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--text-90); }
+	.video-section { margin-top: 1.5rem; }
+	.section-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; margin-bottom: 0.75rem; }
+	.section-heading h2 { margin: 0; color: var(--text-90); font-size: 1.25rem; }
+	.section-heading span { color: var(--text-50); font-size: 0.9rem; }
+	.directory { display: grid; gap: 0.625rem; }
+	.video-group { border: 1px solid var(--line-divider); border-radius: var(--radius-large); background: color-mix(in srgb, var(--card-bg) 84%, transparent); overflow: hidden; }
+	.video-group summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.85rem 1rem; cursor: pointer; list-style: none; color: var(--text-90); font-weight: 800; }
+	.video-group summary::-webkit-details-marker { display: none; }
+	.video-group summary::after { content: "+"; color: var(--primary); font-weight: 900; }
+	.video-group[open] summary::after { content: "-"; }
+	.video-group small { margin-left: auto; color: var(--text-50); font-size: 0.78rem; font-weight: 500; white-space: nowrap; }
+	.video-list { border-top: 1px solid var(--line-divider); }
+	.video-row { width: 100%; display: grid; grid-template-columns: 4rem minmax(0, 1fr) 4rem; gap: 0.75rem; align-items: center; border: 0; border-bottom: 1px solid var(--line-divider); padding: 0.75rem 1rem; background: transparent; color: var(--text-70); text-align: left; cursor: pointer; }
+	.video-row:last-child { border-bottom: 0; }
+	.video-row:hover, .video-row.active { background: color-mix(in srgb, var(--primary) 10%, transparent); color: var(--text-90); }
+	.row-page { color: var(--primary); font-weight: 800; }
+	.row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.row-duration { text-align: right; color: var(--text-50); font-size: 0.82rem; }
+	.video-empty { margin: 0; padding: 0.9rem 1rem; border-top: 1px solid var(--line-divider); color: var(--text-50); }
+	@media (max-width: 768px) {
+		.now-playing, .toolbar, .section-heading { align-items: stretch; flex-direction: column; }
+		.summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+		.video-row { grid-template-columns: 3rem minmax(0, 1fr); }
+		.row-duration { display: none; }
+	}
+</style>
